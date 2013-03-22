@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>No Flash</title>
+		<script src="jquery-1.8.3.min.js"></script>
+		<script>
+			var gc; //used for canvas content 
+			var blastCheck = true;
+			var blastCheck2 = true;
+			var fireCheck = true;
+			var finalBlast = true;
+			
+			var finalXcounter = 100;
+			var finalYcounter = 100;
+			
+			var canvasWidth = 600;
+  			var canvasHeight = 600;
+  			
+  			var sms  = "";
+			var messageSize = 10;
+			var messageX1 = 0;
+			var messageX2 = canvasWidth;
+			var messageY1 = canvasHeight/2;
+			var messageAlpha = 0.05
+			
+			var ballspeed = 15;
+			
+			var g = 9.81; //accelerati on due to gravity
+			
+			var tempo = 1;
+			var tempo1 = 1;
+			var tempo2 = 1;
+			var tempo3 = 1;
+			
+			var stars = new Array();
+			
+			//function for the canvas construction
+			function start()
+			{
+				var bodyelement = document.getElementById("mainbody");
+			
+				// Create the canvas element here dynamically to easier control of its parameters
+  				var canvaselement = document.createElement("canvas");		  		
+  				canvaselement.setAttribute("id", "canvasTarget");
+  				canvaselement.setAttribute("width", canvasWidth + "px");
+  				canvaselement.setAttribute("height", canvasHeight + "px");
+  				
+  				//css for the canvas
+  				canvaselement.setAttribute("style", "border: 1px solid black; -moz-transform: translatez(0); -ms-transform: translatez(0); -o-transform: translatez(0); -webkit-transform: translatez(0); transform: translatez(0); background-color: black; margin-left: 250px;");
+				
+				// Add the canvas to the body
+  				bodyelement.appendChild(canvaselement);
+  				
+  				// Get the 2d graphics context of the canvas - the context is used in all drawing operations		
+  				gc = canvaselement.getContext("2d");
+				gc.font = "30px Arial";
+				//ctx.fillStyle = "white";
+				//ctx.fillText("Zibri", 100, 100);
+				
+				// Start the animation loop
+  				animloop();
+  				
+  				// Draw the ball 
+				//theBall.draw();
+			}
+			
+			//create class for stars
+			function Star()
+			{
+				this.x = 0;
+				this.y = 0;
+				this.radius = 0.1;
+				this.opacity = "";
+				
+				this.positionNopacity();
+			}
+			
+			//function for star position and opacity
+			Star.prototype.positionNopacity = function()
+			{
+				this.x = Math.floor((Math.random()*601));
+				this.y = Math.floor((Math.random()*601));
+				if ((Math.floor((Math.random()*10)+1)%3) == 0)
+				{
+					this.opacity = "rgba(255,255,255,1)";
+				}
+				else if ((Math.floor((Math.random()*10)+1)%2) == 0)
+				{
+					this.opacity = "rgba(139,136,120,1)";
+				}
+				else
+				{
+					this.opacity = "rgba(255,255,255,0)";
+				}
+			}
+			
+			//draw these stars
+			Star.prototype.draw = function()
+			{
+				gc.beginPath();
+	  			gc.arc(this.x, this.y, this.radius, 0, 2 * Math.PI);
+	  				
+	  			gc.fillStyle = this.opacity;
+	  			gc.fill();
+	  			gc.strokeStyle = this.opacity;
+	  			gc.stroke();
+	  			gc.closePath(); 
+			}
+			
+			//arrays for stars object
+			for (var i = 0;i < 500;i++)
+			{
+				stars[i] = new Star();
+			}
+			
+			//create class for fire ball
+			function Ball()
+			{
+				this.x = 0;
+				this.y = 0;
+				this.radius = 6;
+				this.speed = ballspeed; 
+				//this.blast = "";
+				this.color = "";
+				this.angle = 0;
+				this.check = true;
+				this.id = 0;
+				this.theEnd = false;
+				this.randomEnd = false;
+				this.randomEnd2 = false;
+				this.messageShow = false;
+				//to define the color
+				this.r = 0;
+				this.g = 0;
+				this.b = 0;
+				this.a = 0;
+				this.slowIn = 0.011;
+				this.threeFire = false;
+				this.oneFire = false;
+				this.x1 = finalXcounter*(Math.floor((Math.random()*5)+2)/1.5);
+  				this.y1 = finalYcounter*(Math.floor((Math.random()*5)+2))/2;
+				if (((Math.floor((Math.random()*10)+1))%2) == 0)
+				{
+					this.threeFire = true;
+					this.oneFire = false;
+				}
+				else if (((Math.floor((Math.random()*10)+1))%3) == 0)
+				{
+					this.threeFire = false;
+					this.oneFire = false;
+				}				
+				else
+				{
+					this.oneFire = true;
+					this.threeFire = false;
+				}
+  				this.ColorNblastType();
+  			}
+			
+			//draw the fire ball for class ball
+			Ball.prototype.draw = function()
+  			{
+  				if(this.radius > 0)
+  				{
+	  				gc.beginPath();
+	  				gc.arc(this.x, this.y, this.radius, 0, 2 * Math.PI, false);
+	  				
+	  				gc.fillStyle = this.color;
+	  				gc.fill();
+	  				gc.strokeStyle = this.color;
+	  				gc.stroke();
+	  				gc.closePath(); 
+	  				var ballImg = new Image();
+					ballImg.src = 'ball1.png';
+					gc.drawImage(ballImg, this.x-this.radius, this.y+this.radius);
+	  			}
+	  			if (fireCheck == true)
+	  			{
+	  				var audio = new Audio("fire.mp3");
+	  				audio.play();
+	  				fireCheck = false;
+	  			} 		
+  			}
+  			
+  			//type of blast
+  			Ball.prototype.ColorNblastType = function()
+  			{
+  				var n = Math.floor((Math.random()*10)+1);
+  				
+  				switch(n)
+				{
+					case 1:
+						//this.color = "rgb(138,0,0)";
+						this.r = 250;
+						this.g = 0;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 2:
+						//this.color = "rgb(0,138,0)";
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 3:
+						//this.color = "rgb(0,0,138)";
+						this.r = 0;
+						this.g = 0;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 4:
+						//this.color = "rgb(138,138,0)";
+						this.r = 250;
+						this.g = 250;
+						this.b = 0;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 5:
+						//this.color = "rgb(138,0,138)";
+						this.r = 250;
+						this.g = 0;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 6:
+						//this.color = "rgb(50,100,111)";
+						this.r = 50;
+						this.g = 250;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 7:
+						//this.color = "rgb(100,50,111)";
+						this.r = 250;
+						this.g = 50;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 8:
+						//this.color = "rgb(111,100,50)";
+						this.r = 250;
+						this.g = 250;
+						this.b = 50;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 9:
+						//this.color = "rgb(75,50,50)";
+						this.r = 75;
+						this.g = 250;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+					case 10:
+						//this.color = "rgb(50,75,50)";
+						this.r = 250;
+						this.g = 175;
+						this.b = 250;
+						this.a = 1;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						break;
+				}	
+					
+				/*	
+  				if (((Math.floor((Math.random()*10)+1))%2) == 0)
+  				{
+  					this.blast = "triangular";
+  					this.color = "rgba(138, 80, 80, 1)";
+  					//this.angle = (80*Math.PI)/180; 
+  				}
+  				else if (((Math.floor((Math.random()*10)+1))%3) == 0)
+  				{
+  					this.blast = "circular";
+  					this.color = "rgba(54, 62, 134, 1)";
+  					//this.angle = (100*Math.PI)/180; 
+  				}
+  				else
+  				{
+  					this.blast = "rectangular";
+  					this.color = "rgba( 119, 7, 3, 1)";
+  					//this.angle = (90*Math.PI)/180; 
+  				}*/
+  			}
+  			
+  			//execute this function for fireworks when radius of the ball is zero
+  			Ball.prototype.fireWorks = function()
+  			{
+  				/*
+  				//coding
+  				this.radius = this.radius - 0.8;
+					
+				//calculation of x and y of the ball by projectile motion
+				sina = Math.sin(this.angle);
+				cosa = Math.cos(this.angle);
+						
+				if (this.id == 11)
+				{		
+					this.x = this.x + (this.speed*cosa*tempo1/100); //constant(100) for adjusting x-distance travelled by theball
+					this.y = this.y - (this.speed*sina*tempo1/60-0.5*g*Math.pow(tempo1/60,2)); // constant (60) for adjusting y-distance travelled by theball
+					tempo1++;
+				}
+				else if (this.id == 21)
+				{
+					this.x = this.x + (this.speed*cosa*tempo2/100); //constant(100) for adjusting x-distance travelled by theball
+					this.y = this.y - (this.speed*sina*tempo2/60-0.5*g*Math.pow(tempo2/60,2)); // constant (60) for adjusting y-distance travelled by theball
+					tempo2++;
+				} 
+				else if (this.id == 31)
+				{
+					this.x = this.x + (this.speed*cosa*tempo3/100); //constant(100) for adjusting x-distance travelled by theball
+					this.y = this.y - (this.speed*sina*tempo3/60-0.5*g*Math.pow(tempo3/60,2)); // constant (60) for adjusting y-distance travelled by theball
+					tempo3++;
+				}*/
+				var start  = (5*Math.PI)/180;
+				var end = 0;
+				var endTemp = (5*Math.PI)/180;
+				var startTemp = (10*Math.PI)/180;
+				var limit = 73;
+				
+				if (this.threeFire == true)
+				{
+					//endTemp = (10*Math.PI)/180;
+					startTemp = (50*Math.PI)/180;
+					limit = 20;
+				}
+				else if (this.oneFire == true)
+				{
+					startTemp = (60*Math.PI)/180;
+				}
+				//var temp = (5*Math.PI)/180;
+				
+				if (this.a < 0.5)
+				{
+					this.slowIn = this.slowIn + 0.003;
+				}
+				
+				this.a = this.a - this.slowIn;
+				
+				for(var i=0; i < limit; i++)
+				{
+					end = start + endTemp;
+					
+					gc.beginPath();
+					gc.arc(this.x, this.y, this.radius, start, end);
+					if (this.a > 0)
+					{
+						//this.a = this.a - 0.01;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						gc.strokeStyle = this.color;
+						gc.stroke();
+					}
+					else
+					{
+						//$(gc.arc).fadeTo("slow",0);
+						this.theEnd = true;
+						this.radius = 0;
+  						this.a = 1;
+  						this.slowIn = 0.011;
+  						this.ColorNblastType();
+						
+						if (((Math.floor((Math.random()*10)+1))%2) == 0)
+						{
+							this.threeFire = true;
+							this.oneFire = false;
+						}
+						else if (((Math.floor((Math.random()*10)+1))%3) == 0)
+						{
+							this.threeFire = false;
+							this.oneFire = false;
+						}				
+						else
+						{
+							this.oneFire = true;
+							this.threeFire = false;
+						}
+						return;
+					}
+					
+					start = start + startTemp;
+				}
+				if (blastCheck == true)
+				{
+					var audio = new Audio("blast.mp3");
+					audio.play();
+					blastCheck = false;
+				}
+  			}			 
+  			
+  			// Create the ball object and place it to the bottom of the canvas
+  			var theBall_1 = new Ball();
+  			theBall_1.x = canvasWidth / 2;
+  			theBall_1.y = canvasHeight;
+  			theBall_1.id = 1;
+  			theBall_1.angle = (80*Math.PI)/180;
+  			
+  			var theBall_2 = new Ball();
+  			theBall_2.x = canvasWidth / 2;
+  			theBall_2.y = canvasHeight;
+  			theBall_2.id = 2;
+  			theBall_2.angle = (100*Math.PI)/180;
+  			
+  			var theBall_3 = new Ball();
+  			theBall_3.x = canvasWidth / 2;
+  			theBall_3.y = canvasHeight;
+  			theBall_3.id = 3;
+  			theBall_3.angle = (90*Math.PI)/180;
+  			
+  			//create the balls for blast effect
+			Ball.prototype.blastBall1 = function()
+			{
+				/*
+				for (var i = 0; i<73 ; i++)
+	  			{
+	  				balls_1[i] = new Ball();
+	  				balls_1[i].color = this.color;
+	  				balls_1[i].radius = 2;
+	  				balls_1[i].speed = 5;
+	  				balls_1[i].id = 11;
+	  				balls_1[i].x = this.x;
+	  				balls_1[i].y = this.y;
+	  				balls_1[i].check = false;
+	  				balls_1[i].angle = (i*5*Math.PI)/180;
+	  			}*/
+	  		}
+  			
+			Ball.prototype.blastBall2 = function()
+			{
+				/*
+				for (var i = 0; i<73 ; i++)
+	  			{
+	  				balls_2[i] = new Ball();
+	  				balls_2[i].color = this.color;
+	  				balls_2[i].radius = 2;
+	  				balls_2[i].speed = 10;
+	  				balls_2[i].id = 21;
+	  				balls_2[i].x = this.x;
+	  				balls_2[i].y = this.y;
+	  				balls_2[i].check = false;
+	  				balls_2[i].angle = (i*5*Math.PI)/180;
+	  			} */
+	  		}
+  			
+  			Ball.prototype.blastBall3 = function()
+  			{
+  				/*
+	  			for (var i = 0; i<73 ; i++)
+	  			{
+	  				balls_3[i] = new Ball();
+	  				balls_3[i].color = this.color;
+	  				balls_3[i].radius = 2;
+	  				balls_3[i].speed = 10;
+	  				balls_3[i].id = 31;
+	  				balls_3[i].x = this.x;
+	  				balls_3[i].y = this.y;
+	  				balls_3[i].check = false;
+	  				balls_3[i].angle = (i*5*Math.PI)/180;
+	  			}*/
+	  		}
+  			
+  			Ball.prototype.updatefire = function()
+  			{
+				if (this.radius <20)
+				{
+					this.radius += 1;
+				}
+				else
+				{
+					this.radius += 0.5;
+				}
+  			}
+  			
+  			
+  			Ball.prototype.randomFireworksUpdate = function()
+  			{
+  				this.radius += 1;
+  			}
+  			
+  			Ball.prototype.randomFireworks = function()
+  			{
+  				var start  = (5*Math.PI)/180;
+				var end = 0;
+				var endTemp = (5*Math.PI)/180;
+				var startTemp = (10*Math.PI)/180;
+				var limit = 73;
+				
+				if (this.threeFire == true)
+				{
+					//endTemp = (10*Math.PI)/180;
+					startTemp = (50*Math.PI)/180;
+					limit = 20;
+				}
+				else if (this.oneFire == true)
+				{
+					startTemp = (60*Math.PI)/180;
+				}
+				//var temp = (5*Math.PI)/180;
+				
+				if (this.a < 0.5)
+				{
+					this.slowIn = this.slowIn + 0.003;
+				}
+				
+				this.a = this.a - this.slowIn;
+				
+				for(var i=0; i < limit; i++)
+				{
+					end = start + endTemp;
+					
+					gc.beginPath();
+					gc.arc(this.x1, this.y1, this.radius, start, end);
+					if (this.a > 0)
+					{
+						//this.a = this.a - 0.01;
+						this.color = "rgba("+this.r+","+this.g+","+this.b+","+this.a+")";
+						gc.strokeStyle = this.color;
+						gc.stroke();
+					}
+					else
+					{
+						if (this.randomEnd2 == true)
+						{
+							this.randomEnd = true;
+							this.messageShow = true;
+							return;
+						}
+						else
+						{
+							this.x1 = finalXcounter*(Math.floor((Math.random()*5)+2)/1.5);
+							this.y1 = finalYcounter*(Math.floor((Math.random()*5)+2))/2;
+							this.randomEnd2 = true; 
+							this.radius = 0;
+  							this.a = 1;
+  							this.slowIn = 0.011;
+  							this.ColorNblastType();
+  							if (blastCheck2 == true)
+							{
+								var audio = new Audio("blast.mp3");
+								audio.play();
+								blastCheck2 = false;
+							}
+							if (((Math.floor((Math.random()*10)+1))%2) == 0)
+							{
+								this.threeFire = true;
+								this.oneFire = false;
+							}
+							else if (((Math.floor((Math.random()*10)+1))%3) == 0)
+							{
+								this.threeFire = false;
+								this.oneFire = false;
+							}				
+							else
+							{
+								this.oneFire = true;
+								this.threeFire = false;
+							}
+  							return;
+						}
+					}
+					
+					start = start + startTemp;
+				}
+				if (blastCheck == false)
+				{
+					var audio = new Audio("blast.mp3");
+					audio.play();
+					blastCheck = true;
+				}
+  			}
+  			
+  			//finally desplaying animated text
+  			function messageUpdate()
+  			{
+  				if (messageSize <= 40)
+  				{
+  					messageSize += 2;
+  				}
+  				if (messageX1 <= (canvasWidth/4))
+  				{
+					messageX1 += 5;
+  				}
+  				if (messageX2 >= (canvasWidth/2))
+  				{
+  					messageX2 -= 5
+  				}
+  				if (messageAlpha <=1)
+  				{
+  					messageAlpha += 0.1;
+  				}
+  			}
+  			function message()
+  			{
+  				var sms1 = "Happy"; 
+  				var sms2 = "Holidays!!!";
+  				
+  				gc.beginPath();
+				gc.fillStyle = "rgba(255, 223, 0, "+messageAlpha+")";
+  				gc.font = 'bold ' +messageSize+ 'px sans-serif';
+  				gc.fillText(sms1, messageX1, messageY1);
+  				gc.fill();
+  				
+  				gc.beginPath();
+				gc.fillStyle = "rgba(255, 223, 0, "+messageAlpha+")";
+  				gc.font = 'bold ' +messageSize+ 'px sans-serif';
+  				gc.fillText(sms2, messageX2, messageY1);
+  				gc.fill();
+  				//gc.stroke();
+  			}
+  			
+			//updates the position of the fire ball
+			Ball.prototype.update = function()
+			{
+				//coding change poition of ball and decrease the radius
+				//this.y = this.y - this.speed;
+				
+				if (this.radius > 0)
+				{
+					this.radius = this.radius - 0.1;
+					
+					//calculation of x and y of the ball by projectile motion
+					sina = Math.sin(this.angle);
+					cosa = Math.cos(this.angle);
+									
+					this.x = this.x + (this.speed*cosa*tempo/100); //constant(100) for adjusting x-distance travelled by theball
+					this.y = this.y - (this.speed*sina*tempo/60-0.5*g*Math.pow(tempo/60,2)); // constant (60) for adjusting y-distance travelled by theball
+					tempo++;
+				}
+				else
+				{
+					//this.fireWorks();
+					
+					this.check = false;
+				/*	
+					if (this.id == 1)
+					{
+						this.blastBall1();
+					}
+					else if (this.id == 2)
+					{
+						this.blastBall2();
+					}
+					else if (this.id == 3)
+					{
+						this.blastBall3();
+					}*/
+					this.radius = 0;
+				}
+			}
+			
+			// Set the initial speed for the ball
+			//var xSpeed = 0.25;	
+		  	//theBall.vy = -(1.0 - xSpeed);
+		  	//theBall.vx = Math.random() > 0.5 ? xSpeed : -xSpeed;
+		  	
+		  	function animloop()
+    		{ 
+				// Request a new animation frame from the browser. 
+				requestAnimFrame(animloop);
+		
+				// Execute the update phase of the animation loop
+				update();
+		
+				// Render everything on the canvas since all positions have just been updated
+				render();
+		    }
+		    
+		    function update()
+		    {
+		    	// Execute the update function for the ball
+  				if (theBall_1.check == true)
+  				{
+  					theBall_1.update();
+  				}
+  				else if (theBall_1.theEnd == false)
+  				{
+  					/*for (var i = 0; i<balls_1.length; i++ )
+  					{
+  						balls_1[i].fireWorks();
+  					}*/
+  					theBall_1.updatefire();
+  				}
+  				if (theBall_2.check == true)
+  				{
+  					theBall_2.update();
+  				}
+  				else if (theBall_2.theEnd == false)
+  				{
+  					/*for (var i = 0; i<balls_2.length; i++ )
+  					{
+  						balls_2[i].fireWorks();
+  					}*/
+  					theBall_2.updatefire();
+  				}
+  				if (theBall_3.check == true)
+  				{
+  					theBall_3.update();
+  				}
+  				else if (theBall_3.theEnd == false)
+  				{
+  					/*for (var i = 0; i<balls_3.length; i++ )
+  					{
+  						balls_3[i].fireWorks();
+  					}*/
+  					theBall_3.updatefire();
+  				}
+  				if(theBall_1.theEnd == true && theBall_2.theEnd == true && theBall_3.theEnd == true)
+  				{
+  					if (theBall_1.randomEnd == false)
+  					{
+  						theBall_1.randomFireworksUpdate();
+  						//theBall_1.updatefire();
+  					}
+  					if (theBall_2.randomEnd == false)
+  					{
+  						theBall_2.randomFireworksUpdate();
+  						//theBall_2.updatefire();
+  					}
+  					if (theBall_3.randomEnd == false)
+  					{
+  						theBall_3.randomFireworksUpdate();
+  						//theBall_3.updatefire();
+  						//finalBlast = false;
+  					}
+  				}
+  				if(theBall_1.messageShow == true && theBall_2.messageShow == true && theBall_3.messageShow == true)
+  				{
+  					messageUpdate();
+  					//alert ("working");
+  				}
+  			}
+		    
+		    function render()
+		    {
+		    	// Clear the canvas
+				//gc.clearRect(0,0,canvasWidth,canvasHeight);		
+				
+				//adding transparent layer for blur or tail effect of the fire balls
+				gc.beginPath();
+				gc.rect(0,0,canvasWidth,canvasHeight);
+		
+				gc.fillStyle = "rgba(0,0,0,0.2)";
+  				gc.fill();
+  				gc.strokeStyle = "black";
+  				gc.stroke();
+  				gc.closePath();
+  				
+  				for (var i = 0; i < stars.length; i++)
+  				{
+  					stars[i].draw();
+  				}
+	
+				//background image
+				var img = new Image();
+				img.src = 'christmas.png';
+				gc.drawImage(img, 0, canvasHeight/1.5);
+				
+				//img.setAttribute("style", "z-index: 10;");
+				
+				
+				
+				// Draw the ball 
+				/*theBall_1.draw();
+				theBall_2.draw();
+				theBall_3.draw();*/
+				
+				if (theBall_1.check == true)
+  				{
+  					theBall_1.draw();
+  				}
+  				else if (theBall_1.theEnd == false)
+  				{
+  					/*for (var i = 0; i<balls_1.length; i++ )
+  					{
+  						balls_1[i].draw();
+  					}*/
+  					theBall_1.fireWorks();
+  				}
+  				if (theBall_2.check == true)
+  				{
+  					theBall_2.draw();
+  				}
+  				else if (theBall_2.theEnd == false)
+  				{
+  					/*for (var i = 0; i<balls_2.length; i++ )
+  					{
+  						balls_2[i].draw();
+  					}*/
+  					theBall_2.fireWorks();
+  				}
+  				if (theBall_3.check == true)
+  				{
+  					theBall_3.draw();
+  				}
+  				else if (theBall_3.theEnd == false)
+  				{
+  					/*for (var i = 0; i<balls_3.length; i++ )
+  					{
+  						balls_3[i].draw();
+  					}*/
+  					theBall_3.fireWorks();
+  				}
+  				if(theBall_1.theEnd == true && theBall_2.theEnd == true && theBall_3.theEnd == true)
+  				{
+  					if (theBall_1.randomEnd == false)
+  					{
+  						theBall_1.randomFireworks();
+  						//theBall_1.updatefire();
+  					}
+  					if (theBall_2.randomEnd == false)
+  					{
+  						theBall_2.randomFireworks();
+  						//theBall_2.updatefire();
+  					}
+  					if (theBall_3.randomEnd == false)
+  					{
+  						theBall_3.randomFireworks();
+  						//theBall_3.updatefire();
+  						//finalBlast = false;
+  					}
+  				}
+  				if(theBall_1.messageShow == true && theBall_2.messageShow == true && theBall_3.messageShow == true)
+  				{
+  					message();
+  				}
+		    }
+		    
+		    window.requestAnimFrame = (function(){
+      			return  window.requestAnimationFrame       || 
+            	window.webkitRequestAnimationFrame || 
+              	window.mozRequestAnimationFrame    || 
+              	window.oRequestAnimationFrame      || 
+              	window.msRequestAnimationFrame     || 
+              	function( callback ){
+                	window.setTimeout(callback, 1000 / 60);
+              	};
+    		})(); 
+		</script>
+	</head>
+	<body id="mainbody" onload="start()">
+		
+	</body>
+</html>
